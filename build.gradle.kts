@@ -11,6 +11,12 @@ repositories {
     mavenCentral()
 }
 
+dependencies{
+    implementation ("dev.inmo:krontab:0.6.6")
+    implementation("com.google.guava:guava:31.0.1-jre")
+
+}
+
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
 }
