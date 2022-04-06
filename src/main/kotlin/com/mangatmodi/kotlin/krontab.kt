@@ -26,19 +26,26 @@ fun main() {
         TimeUnit.MILLISECONDS,
         ArrayBlockingQueue(1, true),
         ThreadPoolExecutor.CallerRunsPolicy()
-    ).asCoroutineDispatcher()
+    )
 
-
-    val coroutine = CoroutineScope(task).launch {
+    val scope = CoroutineScope(task.asCoroutineDispatcher())
+    scope.launch {
         doInfinity("/2 * * * *") {
-            println("Called")
+            error("Failure")
         }
     }
+        .invokeOnCompletion {
+            println("Unhandled exception")
+            scope.cancel()
+            task.shutdownNow()
+        }
+
 
     Runtime.getRuntime().addShutdownHook(
         Thread {
             println("Shutting down")
-            coroutine.cancel()
+            scope.cancel()
+            task.shutdownNow()
         }
     )
 }

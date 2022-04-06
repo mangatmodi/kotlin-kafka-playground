@@ -3,6 +3,7 @@ package com.mangatmodi.kotlin
 import java.lang.Thread.sleep
 import java.util.concurrent.CompletableFuture
 
+
 fun main() {
     val result = CompletableFuture.allOf(
         CompletableFuture.supplyAsync { 1 },
