@@ -23,9 +23,9 @@ dependencies {
     implementation("io.ktor:ktor-auth:1.6.8")
     implementation("io.ktor:ktor-auth-jwt:1.6.8")
 
-
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
+    kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
 }
