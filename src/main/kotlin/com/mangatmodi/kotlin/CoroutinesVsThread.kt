@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.mangatmodi.kotlin
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
@@ -88,22 +90,25 @@ fun main() {
 }
 
 /**
- * Why executor service is 10000 times faster?
+ * All 3 give similar results, however the one with coroutines was poor until we limited the parallelism.
+ * This is due to the fact that it uses 64 threads by default which is quite a lot and leads to context switching.
  */
-/
+
 @State(Scope.Benchmark)
 @Fork(1)
-@Warmup(iterations = 5)
-@Measurement(iterations = 1, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 10)
+@Measurement(iterations = 10, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Mode.AverageTime)
 class `CoroutinesDoesnotImproveThrouputOrLatency` {
 
+    // 24,987 ±(99.9%) 0,458 ms/op [Average]
     @Benchmark
     fun withCoroutines() {
         runBlocking {
-            val coroutines = (0 until 1000).map {
+            val coroutines = (0 until 100).map {
                 CoroutineScope(Dispatchers.IO).async {
+                    //CoroutineScope(Dispatchers.IO.limitedParallelism(10)).async {
                     sleep(10)
                 }
             }
@@ -112,10 +117,30 @@ class `CoroutinesDoesnotImproveThrouputOrLatency` {
         }
     }
 
+    // 27,778 ±(99.9%) 1,574 ms/op [Average]
     @Benchmark
     fun withExecutorService() {
         val executors = Executors.newFixedThreadPool(60)
-        executors.submit { sleep(10) }
+        (0 until 100).map {
+            executors.submit { sleep(10) }
+        }
         executors.shutdown()
+        executors.awaitTermination(60, TimeUnit.SECONDS)
+    }
+
+    // 30,235 ±(99.9%) 3,407 ms/op [Average]
+    @Benchmark
+    fun threadPoolAsDispatcher() {
+        val executors = Executors.newFixedThreadPool(60)
+        runBlocking {
+            val coroutines = (0 until 100).map {
+                CoroutineScope(executors.asCoroutineDispatcher()).async {
+                    sleep(10)
+                }
+            }
+            coroutines.joinAll()
+        }
+        executors.shutdown()
+        executors.awaitTermination(60, TimeUnit.SECONDS)
     }
 }
