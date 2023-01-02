@@ -1,7 +1,9 @@
 package com.mangatmodi.kotlin
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import kotlinx.benchmark.Mode
 import kotlinx.coroutines.*
+import org.openjdk.jmh.annotations.*
 import java.lang.Thread.sleep
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
@@ -57,9 +59,9 @@ suspend fun `large number of blocking actions will consume large number of threa
     // As established earlier, coroutines does block the thread if the underlying
     // call is blocking. Making huge number of blocking calls will block all the
     // threads.
-    val coroutines = (0 until 10000).map {
+    val coroutines = (0 until 1000).map {
         CoroutineScope(Dispatchers.IO).async {
-            sleep(10_000)
+            sleep(10)
         }
     }
 
@@ -77,13 +79,43 @@ suspend fun `network IO is always blocking`() {
     // There are too many but all of them are blocking
 }
 
-suspend fun `coroutines doesn't improve throuput or latency`(){
-    // TODO: Use JMH
-}
 fun main() {
     runBlocking {
 //        `coroutines are executed on threads, not on thin air`()
 //        `coroutines will block the underlying threads`()
         `large number of blocking actions will consume large number of threads`()
+    }
+}
+
+/**
+ * Why executor service is 10000 times faster?
+ */
+/
+@State(Scope.Benchmark)
+@Fork(1)
+@Warmup(iterations = 5)
+@Measurement(iterations = 1, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@BenchmarkMode(Mode.AverageTime)
+class `CoroutinesDoesnotImproveThrouputOrLatency` {
+
+    @Benchmark
+    fun withCoroutines() {
+        runBlocking {
+            val coroutines = (0 until 1000).map {
+                CoroutineScope(Dispatchers.IO).async {
+                    sleep(10)
+                }
+            }
+
+            coroutines.joinAll()
+        }
+    }
+
+    @Benchmark
+    fun withExecutorService() {
+        val executors = Executors.newFixedThreadPool(60)
+        executors.submit { sleep(10) }
+        executors.shutdown()
     }
 }

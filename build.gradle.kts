@@ -2,6 +2,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.8.0"
+    id("org.jetbrains.kotlinx.benchmark") version "0.4.6"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.8.0"
 }
 
 group = "com.mangatmodi"
@@ -22,10 +24,18 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:2.2.1")
     implementation("io.ktor:ktor-auth:1.6.8")
     implementation("io.ktor:ktor-auth-jwt:1.6.8")
-
+    implementation("org.jetbrains.kotlinx:kotlinx-benchmark-runtime:0.4.6")
 }
-
+benchmark {
+    targets {
+        register("main")
+    }
+}
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
     kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
+}
+
+allOpen {
+    annotation("org.openjdk.jmh.annotations.State")
 }
